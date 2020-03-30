@@ -49,6 +49,7 @@ sd_path = sddraft_path[:-5]
 paths = [sddraft_path, sd_path, temp_json_path, temp_fc_path]
 for item in paths:
     if arcpy.Exists(item):
+        print(f'Deleting {item} prior to use...')
         arcpy.Delete_management(item)
 
 #: Save features to .json, load .json as a feature class
@@ -83,7 +84,7 @@ print('Adding anchor points...')
 anchor_fields = ['DetectorStation', 'AvgChange7D', 'SHAPE@XY']
 with arcpy.da.InsertCursor(temp_fc_path, anchor_fields) as icursor:
     null_island = (0,0)
-    icursor.insertRow(['AnchorLow', 24, null_island])
+    icursor.insertRow(['AnchorLow', 25, null_island])
     icursor.insertRow(['AnchorHigh', 100, null_island])
 
 #: Overwrite existing AGOL service
@@ -111,8 +112,15 @@ arcpy.server.StageService(sddraft_path, sd_path)
 sd_item.update(data=sd_path)
 sd_item.publish(overwrite=True)
 
+#: Update item description
+feature_item = gis.content.get(secrets.FEATURES_ITEM_ID)
+start_date = avgs_dict[station]['StartDate'].split()[0]
+end_date = avgs_dict[station]['EndDate'].split()[0]
+feature_item.description = f'Traffic data obtained from UDOT; updates occur every morning. Data currently reflects traffic from {start_date} to {end_date}.'
+
 #: Cleanup
 to_delete = [sddraft_path, sd_path, temp_json_path, temp_fc_path]
 for item in to_delete:
     if arcpy.Exists(item):
+        print(f'Deleting {item} at end of script...')
         arcpy.Delete_management(item)
