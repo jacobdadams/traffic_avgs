@@ -145,3 +145,9 @@ class TrafficPallet(Pallet):
             if arcpy.Exists(item):
                 self.log.info(f'Deleting {item} at end of script...')
                 arcpy.Delete_management(item)
+
+
+if __name__ == '__main__':
+    pallet = TrafficPallet()
+    pallet.configure_standalone_logging()
+    pallet.process()
