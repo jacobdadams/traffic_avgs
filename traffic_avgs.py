@@ -113,10 +113,12 @@ sd_item.update(data=sd_path)
 sd_item.publish(overwrite=True)
 
 #: Update item description
+print('Updating item description...')
 feature_item = gis.content.get(secrets.FEATURES_ITEM_ID)
 start_date = avgs_dict[station]['StartDate'].split()[0]
 end_date = avgs_dict[station]['EndDate'].split()[0]
-feature_item.description = f'Traffic data obtained from UDOT; updates occur every morning. Data currently reflects traffic from {start_date} to {end_date}.'
+description = f'Traffic data obtained from UDOT; updates occur every morning. Data currently reflects traffic from {start_date} to {end_date}.'
+feature_item.update(item_properties={'description': description})
 
 #: Cleanup
 to_delete = [sddraft_path, sd_path, temp_json_path, temp_fc_path]
