@@ -12,7 +12,7 @@ As this is a one-off, quick-and-dirty implementation, many schema-specific detai
 
 ## Setup
 
-* Run from an ArcGIS Pro environment- clone a new one or use the default.
+* Run from an ArcGIS Pro conda environment- clone a new one or use the default.
   * Requires Python 3 and the arcgis, arcpy, numpy, and pandas libraries.
 * Create a Pro project with a single, blank map and save it somewhere accessible by the script.
   * The defaults are fine; it just needs a map to open. It will remove all the layers from the first map in the project, however, so don't use a project you're using for something else.
