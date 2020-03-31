@@ -23,6 +23,7 @@ traffic_frame['Date'] = pd.to_datetime(traffic_frame['Date'])
 multi_index_df = traffic_frame.set_index(['Station', 'Date'])
 
 station_ids = traffic_frame['Station'].unique()
+trend_columns = [f'D{i}' for i in range(1, 15)]
 avgs_df = pd.DataFrame(index=station_ids, columns=['AvgChange7D'], dtype=np.float64)
 
 for i in station_ids:
@@ -30,6 +31,11 @@ for i in station_ids:
     avgs_df.loc[i, 'AvgChange7D'] = working_df['PercentChange'].mean()
     avgs_df.loc[i, 'StartDate'] = str(working_df.index[0])
     avgs_df.loc[i, 'EndDate'] = str(working_df.index[-1])
+
+    fourteen_day_df = multi_index_df.loc[i, 'PercentChange'].last('14D').copy()
+    for d in range(14):
+        day_column = f'D{d+1}'
+        avgs_df.loc[i, day_column] = fourteen_day_df.iloc[d] 
 
 #: Transpose so that the index becomes the keys and the rows are the values
 avgs_dict = avgs_df.T.to_dict()
@@ -63,6 +69,8 @@ arcpy.JSONToFeatures_conversion(temp_json_path, temp_fc_path)
 #: Add our new columns.
 print('Adding columns...')
 columns = [('DetectorStation', 'TEXT'), ('AvgChange7D', 'DOUBLE'), ('StartDate', 'TEXT'), ('EndDate', 'TEXT')]
+# trend_columns = [(f'D{i}', 'DOUBLE') for i in range(1, 15)]
+columns.extend([(d, 'DOUBLE') for d in trend_columns])
 for col in columns:
     name, dtype = col
     arcpy.AddField_management(temp_fc_path, name, dtype)
@@ -70,6 +78,7 @@ for col in columns:
 #: Update the temp feature class with new averages
 print('Updating feature class with new averages...')
 fields = ['DetectorStation', 'AvgChange7D', 'StartDate', 'EndDate']
+fields.extend(trend_columns)
 with arcpy.da.UpdateCursor(temp_fc_path, fields) as ucursor:
     for row in ucursor:
         station = row[0]
@@ -77,6 +86,8 @@ with arcpy.da.UpdateCursor(temp_fc_path, fields) as ucursor:
             row[1] = avgs_dict[station]['AvgChange7D']
             row[2] = avgs_dict[station]['StartDate'].split()[0]
             row[3] = avgs_dict[station]['EndDate'].split()[0]
+            for column, index in zip(trend_columns, range(4, 18)):
+                row[index] = avgs_dict[station][column]
             ucursor.updateRow(row)
 
 #: Add anchor points for the symbology
