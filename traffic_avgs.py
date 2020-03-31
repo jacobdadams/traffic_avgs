@@ -16,7 +16,7 @@ class TrafficPallet(Pallet):
 
     def process(self):
         #: Load table from web service using a RecordSet
-        print('Loading UDOT data...')
+        self.log.info('Loading UDOT data...')
         record_set = arcpy.RecordSet()
         record_set.load(secrets.TABLE_URL)
         traffic_dict = json.loads(record_set.JSON)
@@ -63,19 +63,19 @@ class TrafficPallet(Pallet):
         paths = [sddraft_path, sd_path, temp_json_path, temp_fc_path]
         for item in paths:
             if arcpy.Exists(item):
-                print(f'Deleting {item} prior to use...')
+                self.log.info(f'Deleting {item} prior to use...')
                 arcpy.Delete_management(item)
 
         #: Save features to .json, load .json as a feature class
-        print(f'Saving JSON to {temp_json_path}...')
+        self.log.info(f'Saving JSON to {temp_json_path}...')
         with open(temp_json_path, 'w') as json_file:
             json_file.write(feature_set.JSON)
 
-        print(f'Creating temp feature class {temp_fc_path}...')
+        self.log.info(f'Creating temp feature class {temp_fc_path}...')
         arcpy.JSONToFeatures_conversion(temp_json_path, temp_fc_path)
 
         #: Add our new columns.
-        print('Adding columns...')
+        self.log.info('Adding columns...')
         columns = [('DetectorStation', 'TEXT'), ('AvgChange7D', 'DOUBLE'), ('StartDate', 'TEXT'), ('EndDate', 'TEXT')]
         # trend_columns = [(f'D{i}', 'DOUBLE') for i in range(1, 15)]
         columns.extend([(d, 'DOUBLE') for d in trend_columns])
@@ -84,7 +84,7 @@ class TrafficPallet(Pallet):
             arcpy.AddField_management(temp_fc_path, name, dtype)
 
         #: Update the temp feature class with new averages
-        print('Updating feature class with new averages...')
+        self.log.info('Updating feature class with new averages...')
         fields = ['DetectorStation', 'AvgChange7D', 'StartDate', 'EndDate']
         fields.extend(trend_columns)
         with arcpy.da.UpdateCursor(temp_fc_path, fields) as ucursor:
@@ -99,7 +99,7 @@ class TrafficPallet(Pallet):
                     ucursor.updateRow(row)
 
         #: Add anchor points for the symbology
-        print('Adding anchor points...')
+        self.log.info('Adding anchor points...')
         anchor_fields = ['DetectorStation', 'AvgChange7D', 'SHAPE@XY']
         with arcpy.da.InsertCursor(temp_fc_path, anchor_fields) as icursor:
             null_island = (0,0)
@@ -107,24 +107,24 @@ class TrafficPallet(Pallet):
             icursor.insertRow(['AnchorHigh', 100, null_island])
 
         #: Overwrite existing AGOL service
-        print(f'Connecting to AGOL as {secrets.USERNAME}...')
+        self.log.info(f'Connecting to AGOL as {secrets.USERNAME}...')
         gis = arcgis.gis.GIS('https://www.arcgis.com', secrets.USERNAME, secrets.PASSWORD)
         sd_item = gis.content.get(secrets.SD_ITEM_ID)
 
         #: Get project references
         #: Assume there's only one map in the project, remove all layers for clean map
-        print(f'Getting map from {secrets.PROJECT_PATH}...')
+        self.log.info(f'Getting map from {secrets.PROJECT_PATH}...')
         project = arcpy.mp.ArcGISProject(secrets.PROJECT_PATH)
         covid_map = project.listMaps()[0]
         for layer in covid_map.listLayers():
-            print(f'Removing {layer} from {covid_map.name}...')
+            self.log.info(f'Removing {layer} from {covid_map.name}...')
             covid_map.removeLayer(layer)
 
         layer = covid_map.addDataFromPath(temp_fc_path)
         project.save()
 
         #: draft, stage, update, publish
-        print(f'Staging and updating...')
+        self.log.info(f'Staging and updating...')
         sharing_draft = covid_map.getWebLayerSharingDraft('HOSTING_SERVER', 'FEATURE', feature_name, [layer])
         sharing_draft.exportToSDDraft(sddraft_path)
         arcpy.server.StageService(sddraft_path, sd_path)
@@ -132,7 +132,7 @@ class TrafficPallet(Pallet):
         sd_item.publish(overwrite=True)
 
         #: Update item description
-        print('Updating item description...')
+        self.log.info('Updating item description...')
         feature_item = gis.content.get(secrets.FEATURES_ITEM_ID)
         start_date = avgs_dict[station]['StartDate'].split()[0]
         end_date = avgs_dict[station]['EndDate'].split()[0]
@@ -143,5 +143,5 @@ class TrafficPallet(Pallet):
         to_delete = [sddraft_path, sd_path, temp_json_path, temp_fc_path]
         for item in to_delete:
             if arcpy.Exists(item):
-                print(f'Deleting {item} at end of script...')
+                self.log.info(f'Deleting {item} at end of script...')
                 arcpy.Delete_management(item)
