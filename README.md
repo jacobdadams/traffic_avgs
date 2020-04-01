@@ -16,7 +16,7 @@ As this is a one-off, quick-and-dirty implementation, many schema-specific detai
   * Requires Python 3 and the arcgis, arcpy, numpy, and pandas libraries.
 * Create a Pro project with a single, blank map and save it somewhere accessible by the script.
   * The defaults are fine; it just needs a map to open. It will remove all the layers from the first map in the project, however, so don't use a project you're using for something else.
-* Rename `secrets_template.py` to `secrets.py` and provide the needed info.
+* Rename `traffic_avgs_secrets_template.py` to `traffic_avgs_secrets.py` and provide the needed info.
   * `.gitignore` is set to ignore `secrets.py` — verify this on your local repo.
 
 ## Environment
