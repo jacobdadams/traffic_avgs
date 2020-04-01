@@ -139,13 +139,6 @@ class TrafficPallet(Pallet):
         description = f'Traffic data obtained from UDOT; updates occur every morning. Data currently reflects traffic from {start_date} to {end_date}.'
         feature_item.update(item_properties={'description': description})
 
-        #: Cleanup
-        to_delete = [sddraft_path, sd_path, temp_json_path, temp_fc_path]
-        for item in to_delete:
-            if arcpy.Exists(item):
-                self.log.info(f'Deleting {item} at end of script...')
-                arcpy.Delete_management(item)
-
 
 if __name__ == '__main__':
     pallet = TrafficPallet()
