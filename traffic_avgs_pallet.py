@@ -6,7 +6,7 @@ import os
 import arcgis
 from forklift.models import Pallet
 
-import secrets
+import traffic_avgs_secrets as secrets
 
 
 class TrafficPallet(Pallet):
